@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net"
 
@@ -41,6 +42,18 @@ func (s *Server) Start() error {
 	return s.server.Serve(listener)
 }
 
-func (s *Server) Stop() {
-	s.server.GracefulStop()
+// Stop waits for in-flight RPCs to finish.
+func (s *Server) Stop(ctx context.Context) {
+	done := make(chan struct{})
+	go func() {
+		s.server.GracefulStop()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-ctx.Done():
+		s.server.Stop()
+		<-done
+	}
 }
