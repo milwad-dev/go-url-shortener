@@ -1,0 +1,64 @@
+services:
+  url:
+    container_name: url_service
+    build:
+      context: ./url-service
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    expose:
+      - "50051"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_NAME: url_shortener
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: secret
+    restart: unless-stopped
+    networks:
+      - url_shortener_net
+
+  redirect:
+    container_name: redirect_service
+    build:
+      context: ./redirect-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    depends_on:
+      - url
+    environment:
+      URL_SERVICE_GRPC_ADDRESS: url:50051
+    restart: unless-stopped
+    networks:
+      - url_shortener_net
+
+  db:
+    container_name: db_service
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: url_shortener
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d url_shortener" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - db-data:/var/lib/postgresql
+    networks:
+      - url_shortener_net
+
+volumes:
+  db-data:
+
+networks:
+  url_shortener_net:
+    driver: bridge
