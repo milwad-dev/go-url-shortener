@@ -50,32 +50,7 @@ func main() {
 
 	http.HandleFunc("POST /url/create", createURLHandler)
 
-	http.HandleFunc("/{code}", func(w http.ResponseWriter, r *http.Request) {
-		code := r.PathValue("code")
-		if code == "" {
-			http.Error(w, "missing code", http.StatusBadRequest)
-			return
-		}
-
-		var url domain.URL
-		err = conn.
-			QueryRow(context.Background(), "SELECT id, original_url, code, created_at FROM urls WHERE code = $1", code).
-			Scan(&url.ID, &url.OriginalURL, &url.Code, &url.CreatedAt)
-		if err != nil {
-			http.Error(w, "Can't find the original url", http.StatusBadRequest)
-			return
-		}
-
-		response := map[string]string{
-			"id":           url.ID,
-			"original_url": url.OriginalURL,
-			"code":         url.Code,
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
-	})
+	http.HandleFunc("/{code}", findURLByCode)
 
 	if err = http.ListenAndServe(":8080", nil); err != nil {
 		panic(err)
@@ -127,6 +102,33 @@ func createURLHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(code)
+}
+
+func findURLByCode(w http.ResponseWriter, r *http.Request) {
+	code := r.PathValue("code")
+	if code == "" {
+		http.Error(w, "missing code", http.StatusBadRequest)
+		return
+	}
+
+	var url domain.URL
+	err := DB.
+		QueryRow(context.Background(), "SELECT id, original_url, code, created_at FROM urls WHERE code = $1", code).
+		Scan(&url.ID, &url.OriginalURL, &url.Code, &url.CreatedAt)
+	if err != nil {
+		http.Error(w, "Can't find the original url", http.StatusBadRequest)
+		return
+	}
+
+	response := map[string]string{
+		"id":           url.ID,
+		"original_url": url.OriginalURL,
+		"code":         url.Code,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }
 
 func generateCode() (string, error) {
