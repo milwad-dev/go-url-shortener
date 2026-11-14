@@ -6,10 +6,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
 	"url-service/internal/domain"
+	server2 "url-service/internal/server"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -44,9 +46,9 @@ func main() {
 
 	fmt.Println("Connected to database")
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("milwad"))
-	})
+	// Start gRPC server
+	grpcServer := startGrpcServer(conn)
+	defer grpcServer.Stop()
 
 	http.HandleFunc("POST /url/create", createURLHandler)
 
@@ -151,4 +153,17 @@ func createTables(conn *pgx.Conn) {
 	)`)
 
 	fmt.Println("The tables has been created")
+}
+
+func startGrpcServer(db *pgx.Conn) *server2.Server {
+	server := server2.NewServer("50051", db)
+	server.RegisterServices()
+
+	go func() {
+		if err := server.Start(); err != nil {
+			log.Fatalf("gRPC server failed: %v", err)
+		}
+	}()
+
+	return server
 }
