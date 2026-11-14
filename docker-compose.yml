@@ -5,7 +5,6 @@ services:
       context: .
       dockerfile: url-service/Dockerfile
     ports:
-      - "8080:8080"
       - "50051:50051"
     stop_grace_period: 15s
     depends_on:

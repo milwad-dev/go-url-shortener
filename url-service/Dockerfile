@@ -30,7 +30,6 @@ RUN apk add --no-cache ca-certificates tzdata
 
 COPY --from=builder /app/url-service .
 
-EXPOSE 8080
 EXPOSE 50051
 
 CMD ["./url-service"]

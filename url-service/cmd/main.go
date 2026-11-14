@@ -2,15 +2,12 @@ package main
 
 import (
 	"context"
-	"errors"
 	"log"
-	"net/http"
 	"os/signal"
 	"syscall"
 	"time"
 	"url-service/internal/config"
 	"url-service/internal/database"
-	"url-service/internal/handler"
 	server2 "url-service/internal/server"
 )
 
@@ -28,36 +25,13 @@ func main() {
 	}
 	defer db.Close()
 
-	// SetUp handlers
-	handlers := handler.CreateHandler(db)
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /url/create", handlers.CreateURL)
-	mux.HandleFunc("GET /{code}", handlers.FindURLByCode)
-
-	httpServer := &http.Server{
-		Addr:              ":8080",
-		Handler:           mux,
-		ReadHeaderTimeout: 5 * time.Second,
-		WriteTimeout:      10 * time.Second,
-		IdleTimeout:       60 * time.Second,
-	}
-
 	grpcServer := server2.NewServer("50051", db)
 	grpcServer.RegisterServices()
 
-	// Run both servers; the first one to fail triggers shutdown
-	errCh := make(chan error, 2)
+	errCh := make(chan error, 1)
 
 	go func() {
 		if err := grpcServer.Start(); err != nil {
-			errCh <- err
-		}
-	}()
-
-	go func() {
-		log.Println("HTTP server listening on :8080")
-		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}
 	}()
@@ -77,10 +51,6 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err := httpServer.Shutdown(shutdownCtx); err != nil {
-		log.Printf("HTTP shutdown: %v", err)
-		exitCode = 1
-	}
 	grpcServer.Stop(shutdownCtx)
 
 	// Close the DB pool last, after no handler can use it
