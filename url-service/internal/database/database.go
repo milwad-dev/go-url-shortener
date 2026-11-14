@@ -2,9 +2,15 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"url-service/migrations"
 )
 
 // ConnectDB opens a connection pool to the database, verifies it and creates the tables.
@@ -19,9 +25,11 @@ func ConnectDB(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("unable to reach database: %w", err)
 	}
 
-	if err = createTables(ctx, pool); err != nil {
+	// Run migrations
+	err = runMigrations(dsn)
+	if err != nil {
 		pool.Close()
-		return nil, err
+		return nil, fmt.Errorf("unable to run migrations: %w", err)
 	}
 
 	fmt.Println("Connected to database")
@@ -29,19 +37,22 @@ func ConnectDB(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-// createTables creates the database tables
-func createTables(ctx context.Context, pool *pgxpool.Pool) error {
-	_, err := pool.Exec(ctx, `CREATE TABLE IF NOT EXISTS urls (
-    	id serial PRIMARY KEY,
-    	original_url text UNIQUE NOT NULL,
-    	code text UNIQUE NOT NULL,
-    	created_at TIMESTAMP WITH TIME ZONE NOT NULL
-	)`)
+// runMigrations applies all pending up-migrations embedded in the binary.
+func runMigrations(databaseURL string) error {
+	source, err := iofs.New(migrations.FS, ".")
 	if err != nil {
-		return fmt.Errorf("unable to create tables: %w", err)
+		return fmt.Errorf("load embedded migrations: %w", err)
 	}
 
-	fmt.Println("The tables has been created")
+	m, err := migrate.NewWithSourceInstance("iofs", source, databaseURL)
+	if err != nil {
+		return err
+	}
+	defer m.Close()
+
+	if err = m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return err
+	}
 
 	return nil
 }
