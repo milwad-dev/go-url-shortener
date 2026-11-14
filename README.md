@@ -331,5 +331,4 @@ Compose sets `stop_grace_period: 15s`, so Docker doesn't kill a container while 
 
 - [ ] **Click tracking.** There's no `click_count` column or counter yet.
 - [ ] **Tests.** There are no unit or integration tests yet. Good first targets: `CreateURL` (validation, duplicate URLs, code collisions) and the HTTP handlers.
-- [ ] **Health checks.** There's no gRPC health service or HTTP `/healthz` endpoint. redirect-service's `depends_on: url` doesn't wait for url-service to be ready.
 - [ ] **Security hardening.** gRPC uses plaintext (`insecure` credentials), the DB credentials are hardcoded in compose, and there's no rate limiting on `POST /create`.

@@ -36,6 +36,16 @@ services:
     restart: unless-stopped
     networks:
       - url_shortener_net
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:8080/healthz
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   db:
     container_name: db_service
