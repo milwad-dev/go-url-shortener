@@ -3,11 +3,14 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
 	urlv1 "github.com/milwad-dev/url-shortener/contracts/url/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Handler struct {
@@ -37,7 +40,7 @@ func (h *Handler) FindURLByCode(w http.ResponseWriter, r *http.Request) {
 	// Call gRPC method
 	clientResponse, err := client.FindByCode(ctx, &urlv1.FindByCodeRequest{Code: code})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeGrpcError(w, err)
 		return
 	}
 
@@ -75,12 +78,7 @@ func (h *Handler) CreateURL(w http.ResponseWriter, r *http.Request) {
 
 	clientResponse, err := client.CreateURL(ctx, &urlv1.CreateURLRequest{Url: body.URL})
 	if err != nil {
-		if err.Error() == "rpc error: code = AlreadyExists desc = url already exists" {
-			http.Error(w, "URL already exists", http.StatusConflict)
-			return
-		}
-
-		http.Error(w, "Something wrong on creating URL.", http.StatusBadRequest)
+		writeGrpcError(w, err)
 		return
 	}
 
@@ -93,4 +91,27 @@ func (h *Handler) CreateURL(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
+}
+
+// writeGrpcError translates a url-service gRPC error into an HTTP response.
+func writeGrpcError(w http.ResponseWriter, err error) {
+	st := status.Convert(err)
+
+	switch st.Code() {
+	case codes.InvalidArgument:
+		http.Error(w, st.Message(), http.StatusBadRequest)
+	case codes.NotFound:
+		http.Error(w, st.Message(), http.StatusNotFound)
+	case codes.AlreadyExists:
+		http.Error(w, st.Message(), http.StatusConflict)
+	case codes.DeadlineExceeded:
+		log.Printf("url-service timeout: %v", err)
+		http.Error(w, "upstream timeout", http.StatusGatewayTimeout)
+	case codes.Unavailable:
+		log.Printf("url-service unavailable: %v", err)
+		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
+	default:
+		log.Printf("url-service error: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+	}
 }

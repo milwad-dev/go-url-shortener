@@ -125,10 +125,32 @@ Creates a short code for a URL.
 | `200 OK`          | Created; the body has `id`, `original_url` and `code` |
 | `400 Bad Request` | The body isn't valid JSON, or the URL is invalid      |
 | `409 Conflict`    | The URL has already been shortened                    |
+| `5xx`             | url-service failed or is unreachable (see below)      |
 
 #### `GET /{code}`
 
 Returns the record for a code as JSON (`id`, `original_url`, `code`).
+
+| Status          | When                                     |
+| --------------- | ---------------------------------------- |
+| `200 OK`        | Found                                    |
+| `404 Not Found` | No URL has this code                     |
+| `5xx`           | url-service failed or is unreachable     |
+
+#### Error mapping
+
+Both endpoints translate url-service's gRPC status codes into HTTP statuses in one place, `writeGrpcError` in `redirect-service/internal/handler`:
+
+| gRPC code          | HTTP                        | Body                         |
+| ------------------ | --------------------------- | ---------------------------- |
+| `InvalidArgument`  | `400 Bad Request`           | url-service's message        |
+| `NotFound`         | `404 Not Found`             | url-service's message        |
+| `AlreadyExists`    | `409 Conflict`              | url-service's message        |
+| `DeadlineExceeded` | `504 Gateway Timeout`       | generic, the error is logged |
+| `Unavailable`      | `503 Service Unavailable`   | generic, the error is logged |
+| anything else      | `500 Internal Server Error` | generic, the error is logged |
+
+Every gRPC call has a 5s deadline. If url-service is down, a request can wait the full 5 seconds before it gets a `504`.
 
 > ⚠️ This returns JSON. It does not yet send an HTTP redirect. See [Known limitations](#known-limitations--roadmap).
 
@@ -293,9 +315,7 @@ Compose sets `stop_grace_period: 15s`, so Docker doesn't kill a container while 
 
 ## Known limitations & roadmap
 
-- [ ] **An unknown code crashes redirect-service.** `GET /{code}` calls `log.Fatal` on any gRPC error, including `NotFound`, so the process exits and Docker restarts it. It should return `404`.
 - [ ] **`GET /{code}` doesn't redirect.** It returns JSON. It should respond with `302 Found` and a `Location` header.
-- [ ] **Errors are matched as strings.** redirect-service compares the gRPC error message text instead of `status.Code(err)`. Invalid URLs currently come back as a generic `400`.
 - [ ] **Click tracking.** There's no `click_count` column or counter yet.
 - [ ] **Schema migrations.** The table is created on startup. A migration tool (e.g. `golang-migrate`) would handle schema changes properly.
 - [ ] **Tests.** There are no unit or integration tests yet. Good first targets: `CreateURL` (validation, duplicate URLs, code collisions) and the HTTP handlers.
