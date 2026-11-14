@@ -35,6 +35,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", handlers.HealthZ)
+	mux.HandleFunc("GET /readyz", handlers.ReadyZ)
 	mux.HandleFunc("POST /create", handlers.CreateURL)
 	mux.HandleFunc("GET /{code}", handlers.FindURLByCode)
 

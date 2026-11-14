@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	urlv1 "github.com/milwad-dev/url-shortener/contracts/url/v1"
 	"google.golang.org/grpc"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 type Server struct {
@@ -29,6 +30,7 @@ func (s *Server) RegisterServices() {
 		s.server,
 		NewURLHandler(s.db),
 	)
+	healthpb.RegisterHealthServer(s.server, NewHealthHandler(s.db))
 }
 
 func (s *Server) Start() error {

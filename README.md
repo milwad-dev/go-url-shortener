@@ -137,6 +137,19 @@ Returns the record for a code as JSON (`id`, `original_url`, `code`).
 | `404 Not Found` | No URL has this code                     |
 | `5xx`           | url-service failed or is unreachable     |
 
+#### `GET /healthz` (liveness)
+
+Always returns `200 {"status": "OK"}` while the process can serve HTTP. It doesn't check dependencies, so an orchestrator won't restart redirect-service just because url-service or the database is down.
+
+#### `GET /readyz` (readiness)
+
+Returns `200` only when redirect-service can actually serve traffic. It calls url-service's standard gRPC health service (`grpc.health.v1.Health/Check`), and url-service reports `SERVING` only while PostgreSQL answers a ping. So one probe covers the whole chain: redirect-service → url-service → PostgreSQL. The check times out after 2s.
+
+| Status                    | Body                                                      |
+| ------------------------- | --------------------------------------------------------- |
+| `200 OK`                  | `{"status":"OK","services":{"grpc":true}}`                |
+| `503 Service Unavailable` | `{"status":"NOT_READY","services":{"grpc":false}}`        |
+
 #### Error mapping
 
 Both endpoints translate url-service's gRPC status codes into HTTP statuses in one place, `writeGrpcError` in `redirect-service/internal/handler`:
