@@ -23,6 +23,13 @@ func NewHandler(grpcConn *grpc.ClientConn) *Handler {
 	}
 }
 
+// HealthZ handles liveness checks to verify that the application is running and able to respond to HTTP requests
+func (h *Handler) HealthZ(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("{\"status\": \"OK\"}"))
+}
+
 // FindURLByCode find url via code from url-service
 func (h *Handler) FindURLByCode(w http.ResponseWriter, r *http.Request) {
 	code := r.PathValue("code")
@@ -85,7 +92,7 @@ func (h *Handler) CreateURL(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// writeGrpcError translates a url-service gRPC error into an HTTP response.
+// writeGrpcError translates a url-service gRPC error into an HTTP response
 func writeGrpcError(w http.ResponseWriter, err error) {
 	st := status.Convert(err)
 
