@@ -1,30 +1,19 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"log"
 	"net/http"
 	"redirect_service/internal/config"
+	"redirect_service/internal/handler"
 	"time"
 
-	urlv1 "github.com/milwad-dev/url-shortener/contracts/url/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
 	cfg := config.LoadConfig()
-
-	mux := http.NewServeMux()
-
-	server := &http.Server{
-		Addr:              ":8081",
-		Handler:           mux,
-		ReadHeaderTimeout: 5 * time.Second,
-		WriteTimeout:      10 * time.Second,
-		IdleTimeout:       60 * time.Second,
-	}
 
 	// Create connection
 	conn, err := grpc.NewClient(
@@ -36,23 +25,19 @@ func main() {
 	}
 	defer conn.Close()
 
-	// Create gRPC client
-	client := urlv1.NewUrlServiceClient(conn)
+	// SetUp handlers
+	handlers := handler.NewHandler(conn)
 
-	// Set request timeout
-	ctx, cancel := context.WithTimeout(
-		context.Background(),
-		5*time.Second,
-	)
-	defer cancel()
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /{code}", handlers.FindURLByCode)
 
-	// Call gRPC method
-	response, err := client.FindByCode(ctx, &urlv1.FindByCodeRequest{Code: "iwXj-Z-r"})
-	if err != nil {
-		log.Fatal(err)
+	server := &http.Server{
+		Addr:              ":8081",
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
-
-	log.Println(response)
 
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal(err)
