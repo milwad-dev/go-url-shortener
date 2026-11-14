@@ -75,7 +75,11 @@ func (h *Handler) CreateURL(w http.ResponseWriter, r *http.Request) {
 
 	clientResponse, err := client.CreateURL(ctx, &urlv1.CreateURLRequest{Url: body.URL})
 	if err != nil {
-		log.Fatal(err)
+		if err.Error() == "rpc error: code = AlreadyExists desc = url already exists" {
+			http.Error(w, "URL already exists", http.StatusConflict)
+			return
+		}
+
 		http.Error(w, "Something wrong on creating URL.", http.StatusBadRequest)
 		return
 	}
