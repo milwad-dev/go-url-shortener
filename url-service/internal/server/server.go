@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	urlv1 "github.com/milwad-dev/url-shortener/contracts/url/v1"
 	"google.golang.org/grpc"
 )
@@ -12,10 +12,10 @@ import (
 type Server struct {
 	server *grpc.Server
 	port   string
-	db     *pgx.Conn
+	db     *pgxpool.Pool
 }
 
-func NewServer(port string, db *pgx.Conn) *Server {
+func NewServer(port string, db *pgxpool.Pool) *Server {
 	return &Server{
 		server: grpc.NewServer(),
 		port:   port,

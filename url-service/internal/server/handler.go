@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	urlv1 "github.com/milwad-dev/url-shortener/contracts/url/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,10 +16,10 @@ import (
 
 type URLHandler struct {
 	urlv1.UnimplementedUrlServiceServer
-	db *pgx.Conn
+	db *pgxpool.Pool
 }
 
-func NewURLHandler(db *pgx.Conn) *URLHandler {
+func NewURLHandler(db *pgxpool.Pool) *URLHandler {
 	return &URLHandler{db: db}
 }
 

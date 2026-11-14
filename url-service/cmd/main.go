@@ -9,7 +9,7 @@ import (
 	"url-service/internal/handler"
 	server2 "url-service/internal/server"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
@@ -17,9 +17,11 @@ func main() {
 	cfg := config.LoadConfig()
 
 	// Connect to DB
-	dsn := cfg.DSN()
-	db, err := database.ConnectDB(dsn)
-	defer db.Close(context.Background())
+	db, err := database.ConnectDB(context.Background(), cfg.DSN())
+	if err != nil {
+		log.Fatalf("database: %v", err)
+	}
+	defer db.Close()
 
 	// Start gRPC server
 	grpcServer := startGrpcServer(db)
@@ -37,7 +39,7 @@ func main() {
 	}
 }
 
-func startGrpcServer(db *pgx.Conn) *server2.Server {
+func startGrpcServer(db *pgxpool.Pool) *server2.Server {
 	server := server2.NewServer("50051", db)
 	server.RegisterServices()
 

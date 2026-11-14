@@ -9,14 +9,14 @@ import (
 	"time"
 	"url-service/internal/domain"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Handler struct {
-	DB *pgx.Conn
+	DB *pgxpool.Pool
 }
 
-func CreateHandler(db *pgx.Conn) *Handler {
+func CreateHandler(db *pgxpool.Pool) *Handler {
 	return &Handler{DB: db}
 }
 

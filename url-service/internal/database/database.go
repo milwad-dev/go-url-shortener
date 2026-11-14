@@ -3,42 +3,45 @@ package database
 import (
 	"context"
 	"fmt"
-	"os"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// ConnectDB connect to database
-func ConnectDB(dsn string) (*pgx.Conn, error) {
-	// Connect to database
-	conn, err := pgx.Connect(context.Background(), dsn)
+// ConnectDB opens a connection pool to the database, verifies it and creates the tables.
+func ConnectDB(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
+		return nil, fmt.Errorf("unable to create database pool: %w", err)
 	}
 
-	// Ping the database
-	if err = conn.Ping(context.Background()); err != nil {
+	if err = pool.Ping(ctx); err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("unable to reach database: %w", err)
+	}
+
+	if err = createTables(ctx, pool); err != nil {
+		pool.Close()
 		return nil, err
 	}
 
-	// Create database tables
-	createTables(conn)
-
 	fmt.Println("Connected to database")
 
-	return conn, nil
+	return pool, nil
 }
 
-// createTables create the database tables
-func createTables(conn *pgx.Conn) {
-	// URLs table
-	conn.Exec(context.Background(), `CREATE TABLE IF NOT EXISTS urls (
+// createTables creates the database tables
+func createTables(ctx context.Context, pool *pgxpool.Pool) error {
+	_, err := pool.Exec(ctx, `CREATE TABLE IF NOT EXISTS urls (
     	id serial PRIMARY KEY,
     	original_url text UNIQUE NOT NULL,
     	code text UNIQUE NOT NULL,
     	created_at TIMESTAMP WITH TIME ZONE NOT NULL
 	)`)
+	if err != nil {
+		return fmt.Errorf("unable to create tables: %w", err)
+	}
 
 	fmt.Println("The tables has been created")
+
+	return nil
 }
