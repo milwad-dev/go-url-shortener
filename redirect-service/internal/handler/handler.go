@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
@@ -38,7 +37,8 @@ func (h *Handler) FindURLByCode(w http.ResponseWriter, r *http.Request) {
 	// Call gRPC method
 	clientResponse, err := client.FindByCode(ctx, &urlv1.FindByCodeRequest{Code: code})
 	if err != nil {
-		log.Fatal(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	response := map[string]string{
