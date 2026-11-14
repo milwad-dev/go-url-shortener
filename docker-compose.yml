@@ -16,6 +16,7 @@ services:
       DATABASE_NAME: url_shortener
       DATABASE_USER: postgres
       DATABASE_PASSWORD: secret
+      DATABASE_SSLMODE: disable
     restart: unless-stopped
     networks:
       - url_shortener_net
