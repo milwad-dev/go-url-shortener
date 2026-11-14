@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	UrlService_FindByCode_FullMethodName = "/url.v1.UrlService/FindByCode"
+	UrlService_CreateURL_FullMethodName  = "/url.v1.UrlService/CreateURL"
 )
 
 // UrlServiceClient is the client API for UrlService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UrlServiceClient interface {
 	FindByCode(ctx context.Context, in *FindByCodeRequest, opts ...grpc.CallOption) (*FindByCodeResponse, error)
+	CreateURL(ctx context.Context, in *CreateURLRequest, opts ...grpc.CallOption) (*CreateURLResponse, error)
 }
 
 type urlServiceClient struct {
@@ -47,11 +49,22 @@ func (c *urlServiceClient) FindByCode(ctx context.Context, in *FindByCodeRequest
 	return out, nil
 }
 
+func (c *urlServiceClient) CreateURL(ctx context.Context, in *CreateURLRequest, opts ...grpc.CallOption) (*CreateURLResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateURLResponse)
+	err := c.cc.Invoke(ctx, UrlService_CreateURL_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UrlServiceServer is the server API for UrlService service.
 // All implementations must embed UnimplementedUrlServiceServer
 // for forward compatibility.
 type UrlServiceServer interface {
 	FindByCode(context.Context, *FindByCodeRequest) (*FindByCodeResponse, error)
+	CreateURL(context.Context, *CreateURLRequest) (*CreateURLResponse, error)
 	mustEmbedUnimplementedUrlServiceServer()
 }
 
@@ -64,6 +77,9 @@ type UnimplementedUrlServiceServer struct{}
 
 func (UnimplementedUrlServiceServer) FindByCode(context.Context, *FindByCodeRequest) (*FindByCodeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method FindByCode not implemented")
+}
+func (UnimplementedUrlServiceServer) CreateURL(context.Context, *CreateURLRequest) (*CreateURLResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateURL not implemented")
 }
 func (UnimplementedUrlServiceServer) mustEmbedUnimplementedUrlServiceServer() {}
 func (UnimplementedUrlServiceServer) testEmbeddedByValue()                    {}
@@ -104,6 +120,24 @@ func _UrlService_FindByCode_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UrlService_CreateURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateURLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UrlServiceServer).CreateURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UrlService_CreateURL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UrlServiceServer).CreateURL(ctx, req.(*CreateURLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UrlService_ServiceDesc is the grpc.ServiceDesc for UrlService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var UrlService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FindByCode",
 			Handler:    _UrlService_FindByCode_Handler,
+		},
+		{
+			MethodName: "CreateURL",
+			Handler:    _UrlService_CreateURL_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

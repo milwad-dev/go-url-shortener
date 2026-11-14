@@ -29,6 +29,7 @@ func main() {
 	handlers := handler.NewHandler(conn)
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("POST /create", handlers.CreateURL)
 	mux.HandleFunc("GET /{code}", handlers.FindURLByCode)
 
 	server := &http.Server{

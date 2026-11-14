@@ -47,3 +47,7 @@ func (h *URLHandler) FindByCode(ctx context.Context, req *urlv1.FindByCodeReques
 		CreatedAt:   timestamppb.New(url.CreatedAt),
 	}, nil
 }
+
+func (h *URLHandler) CreateURL(ctx context.Context, req *urlv1.CreateURLRequest) (*urlv1.CreateURLResponse, error) {
+
+}

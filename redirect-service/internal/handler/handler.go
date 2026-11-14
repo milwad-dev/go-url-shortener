@@ -51,3 +51,42 @@ func (h *Handler) FindURLByCode(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
+
+// CreateURL create new url if not exists before
+func (h *Handler) CreateURL(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		URL string `json:"url"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		http.Error(w, "URL is required.", http.StatusBadRequest)
+		return
+	}
+
+	// Create gRPC client
+	client := urlv1.NewUrlServiceClient(h.GrpcConn)
+
+	// Set request timeout
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		5*time.Second,
+	)
+	defer cancel()
+
+	clientResponse, err := client.CreateURL(ctx, &urlv1.CreateURLRequest{Url: body.URL})
+	if err != nil {
+		log.Fatal(err)
+		http.Error(w, "Something wrong on creating URL.", http.StatusBadRequest)
+		return
+	}
+
+	response := map[string]string{
+		"id":           clientResponse.Id,
+		"original_url": clientResponse.OriginalUrl,
+		"code":         clientResponse.Code,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}

@@ -14,10 +14,20 @@ message FindByCodeResponse {
   string id = 1;
   string original_url = 2;
   string code = 3;
-  int64 click_count = 4;
   google.protobuf.Timestamp created_at = 5;
+}
+
+message CreateURLRequest {
+  string url = 1;
+}
+
+message CreateURLResponse {
+  string id = 1;
+  string original_url = 2;
+  string code = 3;
 }
 
 service UrlService {
   rpc FindByCode(FindByCodeRequest) returns (FindByCodeResponse);
+  rpc CreateURL(CreateURLRequest) returns (CreateURLResponse);
 }
