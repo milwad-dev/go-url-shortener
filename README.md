@@ -315,7 +315,6 @@ Compose sets `stop_grace_period: 15s`, so Docker doesn't kill a container while 
 
 ## Known limitations & roadmap
 
-- [ ] **`GET /{code}` doesn't redirect.** It returns JSON. It should respond with `302 Found` and a `Location` header.
 - [ ] **Click tracking.** There's no `click_count` column or counter yet.
 - [ ] **Schema migrations.** The table is created on startup. A migration tool (e.g. `golang-migrate`) would handle schema changes properly.
 - [ ] **Tests.** There are no unit or integration tests yet. Good first targets: `CreateURL` (validation, duplicate URLs, code collisions) and the HTTP handlers.

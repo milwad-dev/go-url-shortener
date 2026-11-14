@@ -44,15 +44,7 @@ func (h *Handler) FindURLByCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := map[string]string{
-		"id":           clientResponse.Id,
-		"original_url": clientResponse.OriginalUrl,
-		"code":         clientResponse.Code,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	http.Redirect(w, r, clientResponse.OriginalUrl, http.StatusFound)
 }
 
 // CreateURL create new url if not exists before
