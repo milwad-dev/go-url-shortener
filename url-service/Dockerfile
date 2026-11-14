@@ -1,16 +1,20 @@
 # Build stage
 FROM golang:1.26-alpine AS builder
 
-WORKDIR /app
+WORKDIR /src
 
 RUN apk add --no-cache ca-certificates git
 
+# Shared proto contracts (go.mod replace => ../proto)
+COPY proto ./proto
+
 # Download dependencies
-COPY go.mod go.sum ./
+COPY url-service/go.mod url-service/go.sum ./url-service/
+WORKDIR /src/url-service
 RUN go mod download
 
 # Copy source code
-COPY . .
+COPY url-service/ .
 
 # Build application
 RUN CGO_ENABLED=0 GOOS=linux go build \
