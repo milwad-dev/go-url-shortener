@@ -30,11 +30,6 @@ services:
       - "8081:8081"
     stop_grace_period: 15s
     environment:
-      DATABASE_HOST: db
-      DATABASE_PORT: 5432
-      DATABASE_NAME: url_shortener
-      DATABASE_USER: postgres
-      DATABASE_PASSWORD: secret
       URL_SERVICE_GRPC_ADDRESS: url:50051
     depends_on:
       - url

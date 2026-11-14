@@ -190,13 +190,14 @@ Both services are configured entirely through environment variables. The values 
 
 **url-service**
 
-| Variable            | Example         | Description       |
-| ------------------- | --------------- | ----------------- |
-| `DATABASE_HOST`     | `db`            | PostgreSQL host   |
-| `DATABASE_PORT`     | `5432`          | PostgreSQL port   |
-| `DATABASE_NAME`     | `url_shortener` | Database name     |
-| `DATABASE_USER`     | `postgres`      | Database user     |
-| `DATABASE_PASSWORD` | `secret`        | Database password |
+| Variable            | Example         | Description                                                                                       |
+| ------------------- | --------------- | ------------------------------------------------------------------------------------------------- |
+| `DATABASE_HOST`     | `db`            | PostgreSQL host                                                                                   |
+| `DATABASE_PORT`     | `5432`          | PostgreSQL port                                                                                   |
+| `DATABASE_NAME`     | `url_shortener` | Database name                                                                                     |
+| `DATABASE_USER`     | `postgres`      | Database user                                                                                     |
+| `DATABASE_PASSWORD` | `secret`        | Database password                                                                                 |
+| `DATABASE_SSLMODE`  | `disable`       | PostgreSQL [`sslmode`](https://www.postgresql.org/docs/current/libpq-ssl.html). Optional, defaults to `disable`. Use `require` or stricter in production |
 
 **redirect-service**
 
@@ -316,8 +317,6 @@ Compose sets `stop_grace_period: 15s`, so Docker doesn't kill a container while 
 ## Known limitations & roadmap
 
 - [ ] **Click tracking.** There's no `click_count` column or counter yet.
-- [ ] **Schema migrations.** The table is created on startup. A migration tool (e.g. `golang-migrate`) would handle schema changes properly.
 - [ ] **Tests.** There are no unit or integration tests yet. Good first targets: `CreateURL` (validation, duplicate URLs, code collisions) and the HTTP handlers.
 - [ ] **Health checks.** There's no gRPC health service or HTTP `/healthz` endpoint. redirect-service's `depends_on: url` doesn't wait for url-service to be ready.
 - [ ] **Security hardening.** gRPC uses plaintext (`insecure` credentials), the DB credentials are hardcoded in compose, and there's no rate limiting on `POST /create`.
-- [ ] **Unused config.** redirect-service is given `DATABASE_*` variables it never reads.
