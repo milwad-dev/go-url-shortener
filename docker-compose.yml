@@ -7,6 +7,7 @@ services:
     ports:
       - "8080:8080"
       - "50051:50051"
+    stop_grace_period: 15s
     depends_on:
       db:
         condition: service_healthy
