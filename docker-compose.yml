@@ -2,12 +2,11 @@ services:
   url:
     container_name: url_service
     build:
-      context: ./url-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: url-service/Dockerfile
     ports:
       - "8080:8080"
-    expose:
-      - "50051"
+      - "50051:50051"
     depends_on:
       db:
         condition: service_healthy
