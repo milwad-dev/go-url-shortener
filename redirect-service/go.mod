@@ -4,6 +4,7 @@ go 1.26.2
 
 require (
 	github.com/milwad-dev/url-shortener/contracts v0.0.0
+	golang.org/x/time v0.16.0
 	google.golang.org/grpc v1.85.0
 )
 

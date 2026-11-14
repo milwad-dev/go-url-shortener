@@ -214,9 +214,11 @@ Both services are configured entirely through environment variables. The values 
 
 **redirect-service**
 
-| Variable                   | Example     | Description                 |
-| -------------------------- | ----------- | --------------------------- |
-| `URL_SERVICE_GRPC_ADDRESS` | `url:50051` | gRPC address of url-service |
+| Variable                   | Example     | Description                                                          |
+| -------------------------- | ----------- | -------------------------------------------------------------------- |
+| `URL_SERVICE_GRPC_ADDRESS` | `url:50051` | gRPC address of url-service                                          |
+| `RATE_LIMIT_RPS`           | `10`        | Requests per second allowed per client IP. Optional, defaults to `10` |
+| `RATE_LIMIT_BURST`         | `20`        | Burst size above the rate per client IP. Optional, defaults to `20`   |
 
 > The credentials in `docker-compose.yml` are development defaults. Don't use them in production.
 
@@ -323,6 +325,10 @@ Then rebuild both services. They each compile the generated code, so a contract 
 
 Compose sets `stop_grace_period: 15s`, so Docker doesn't kill a container while it's still draining. A second `Ctrl+C` exits immediately.
 
+**Per-client rate limiting.** redirect-service gives each client IP its own token bucket (`golang.org/x/time/rate`), 10 req/s with bursts of 20 by default. One noisy client can't block everyone else. Throttled requests get `429 Too Many Requests` with a `Retry-After` header. `/healthz` and `/readyz` are never limited, so probes keep working under load. The client IP comes from the TCP connection. `X-Forwarded-For` is ignored, because clients can forge it, so revisit this if you put a reverse proxy in front. Buckets for clients idle for 3 minutes are evicted.
+
+**Container health.** Compose runs a healthcheck against redirect-service's `/healthz` every 30s, using BusyBox `wget`, since the alpine image has no `curl`. `docker compose ps` shows its `healthy`/`unhealthy` state.
+
 **Fail fast at startup.** If url-service can't reach PostgreSQL or create the schema, it exits with a clear error instead of starting half-working.
 
 ---
@@ -331,4 +337,3 @@ Compose sets `stop_grace_period: 15s`, so Docker doesn't kill a container while 
 
 - [ ] **Click tracking.** There's no `click_count` column or counter yet.
 - [ ] **Tests.** There are no unit or integration tests yet. Good first targets: `CreateURL` (validation, duplicate URLs, code collisions) and the HTTP handlers.
-- [ ] **Security hardening.** gRPC uses plaintext (`insecure` credentials), the DB credentials are hardcoded in compose, and there's no rate limiting on `POST /create`.

@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"redirect_service/internal/config"
 	"redirect_service/internal/handler"
+	"redirect_service/internal/middleware"
 	"syscall"
 	"time"
 
@@ -39,9 +40,12 @@ func main() {
 	mux.HandleFunc("POST /create", handlers.CreateURL)
 	mux.HandleFunc("GET /{code}", handlers.FindURLByCode)
 
+	rateLimiter := middleware.NewRateLimiter(ctx, cfg.RateLimit.RPS, cfg.RateLimit.Burst)
+	rateHandler := rateLimiter.Middleware(mux)
+
 	server := &http.Server{
 		Addr:              ":8081",
-		Handler:           mux,
+		Handler:           rateHandler,
 		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       60 * time.Second,
